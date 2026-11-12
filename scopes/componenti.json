@@ -1,0 +1,12 @@
+{
+  "id": "componenti",
+  "name": "Componenti elettronici",
+  "icon": "cpu",
+  "targetFolder": "componenti",
+  "photoHints": ["etichetta", "oggetto"],
+  "fields": [
+    { "key": "quantity", "label": "Quantità", "type": "number", "required": false, "min": 1 },
+    { "key": "location", "label": "Ubicazione", "type": "text", "required": false, "default": "Stanley-1", "maxLength": 64 },
+    { "key": "note", "label": "Nota", "type": "text", "required": false, "maxLength": 500 }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "installed": [
+    {
+      "package": "dr-guidelines",
+      "installedAt": "2026-11-12",
+      "commit": "9fd1110d1e26b3e0a26161e5ef45237f99e74d21"
+    },
+    {
+      "package": "dr-dotnet-backend",
+      "installedAt": "2026-11-12",
+      "commit": "4475089f0440fd9768633504ff379467926a0edf"
+    },
+    {
+      "package": "dr-minimalapi",
+      "installedAt": "2026-11-12",
+      "commit": "910b829a16cd13d6b883742026df4a3f1bc12669"
+    },
+    {
+      "package": "dr-fe",
+      "installedAt": "2026-11-12",
+      "commit": "7ce05f324cdafd6ffaab3e51071162dc7f8725db"
+    }
+  ]
+}

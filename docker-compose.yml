@@ -1,0 +1,59 @@
+# dr-photodrop - BOZZA, non avviare prima dell'approvazione del piano (.ai/plans/2026-11-12-photo-inbox/plan.md).
+# API di ricezione + frontend PWA. Segreti in .env (non committato): copia .env.example e compilalo.
+# I dati stanno FUORI dal repository: E:\Davide\VM\docker\dr-photodrop\ (la cartella va creata nella fase 1 del piano).
+
+services:
+  api:
+    build: .
+    image: dr-photodrop-api:latest
+    container_name: dr-photodrop-api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      # L'app gira con utente non privilegiato e la sua cartella non è scrivibile: i log su file vanno in /tmp.
+      - Serilog__WriteTo__1__Args__path=/tmp/logs/app-.log
+      - Inbox__RootPath=/data/inbox
+      - Inbox__ScopesPath=/app/scopes
+    ports:
+      # Solo per sviluppo/diagnostica: http://localhost:5070/health
+      - "5070:8080"
+    volumes:
+      # Inbox: foto + JSON affiancati, letti dalle skill di catalogazione (es. dr-partsbin-catalog-photos)
+      - E:/Davide/VM/docker/dr-photodrop/inbox:/data/inbox
+      # Un file JSON per ambito: nuovo ambito = nuovo file, senza ricompilare
+      - ./scopes:/app/scopes:ro
+    networks:
+      - spectre-net
+    healthcheck:
+      # L'immagine aspnet non ha curl né wget: richiesta HTTP a /health con il solo bash (/dev/tcp).
+      test:
+        - CMD
+        - bash
+        - -c
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/8080 &&
+          printf 'GET /health HTTP/1.0\r\nHost: localhost\r\n\r\n' >&3 &&
+          read -r status <&3 &&
+          [[ $$status == *" 200 "* ]]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  fe:
+    build: ./fe
+    image: dr-photodrop-fe:latest
+    container_name: dr-photodrop-fe
+    restart: unless-stopped
+    # Nessuna porta pubblicata: lo raggiunge nginx-proxy su spectre-net (hostname e HTTPS: fase 1 del piano).
+    environment:
+      - PHOTODROP_API_URL=http://dr-photodrop-api:8080
+    networks:
+      - spectre-net
+    depends_on:
+      - api
+
+networks:
+  spectre-net:
+    external: true

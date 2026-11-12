@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/dr_photodrop.api/dr_photodrop.api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/dr_photodrop.tests/dr_photodrop.tests.csproj" />
+  </Folder>
+</Solution>

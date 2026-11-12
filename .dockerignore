@@ -1,0 +1,18 @@
+**/bin/
+**/obj/
+.git/
+.vs/
+.vscode/
+.ai/
+.claude/
+.agents/
+.github/
+fe/node_modules/
+fe/dist/
+tests/
+.env
+*.env
+*.md
+# Valori locali con credenziali reali: mai nell'immagine (verrebbero caricati per ultimi)
+**/appsettings.local.json
+**/appsettings.*.local.json

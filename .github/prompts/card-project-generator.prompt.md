@@ -1,0 +1,131 @@
+﻿---
+agent: 'agent'
+description: 'Genera schede riassuntive per ogni progetto nella solution'
+tools: ['search/codebase']
+---
+
+# Prompt: Card Project Generator (AI Agent)
+
+Genera schede riassuntive per ogni progetto. Non inventare dati. Lascia vuoto se non trovi info.
+
+## Dati obbligatori (raccogli prima di generare)
+
+Se uno dei seguenti dati non è presente nella conversazione, **chiedilo all'utente una sola volta prima di generare le card**.
+
+| Dato | Descrizione | Formato accettato |
+|------|-------------|-------------------|
+| **Referente** | Nome del responsabile del progetto | Nome e cognome o ruolo (es. `Mario Rossi`, `Team Backend`) |
+| **Ambiente Test** | Dove è pubblicato il software in test | Percorso fisico, nome server, stack Portainer/Swarm (es. `srv-test01`, `Stack "myapp-test" su Portainer SRVDOCKER`, `C:\inetpub\test\myapp`) |
+| **Ambiente Produzione** | Dove è pubblicato il software in produzione | Stesso formato — se non pubblicato, dichiarare esplicitamente `non pubblicato` |
+
+⛔ **Regola non negoziabile:** `Ambiente Test` e `Ambiente Produzione` non possono restare vuoti. Chiedi i dati **una sola volta**; se l'utente non li fornisce, compila con `non pubblicato` (stesso fallback dei template dedicati). `Referente` non fornito → `da definire`. Non generare card con questi campi vuoti e non ripetere la domanda in loop.
+
+## Output
+
+Per ogni progetto genera **la card standard**:
+
+| Card | File | Dati sensibili | Committata |
+|------|------|----------------|------------|
+| Card standard | `docs/card-<nome_progetto>.md` | No — solo nomi variabili | Sì |
+
+> La wiki card è un passo separato: `.github/prompts/card-wiki-generator.prompt.md`, da eseguire solo su richiesta esplicita e per ultima.
+
+- Se c'e una solution (``.sln``/``.slnx``), riferiscila nel campo Solution
+- Se non c'e solution ma c'e ``.code-workspace``, usa il campo Workspace
+
+## Rilevamento tipo di progetto
+
+Prima di generare la card standard, rileva il tipo del progetto e usa il template dedicato:
+
+| Segnale nel codice | Tipo rilevato | Template card standard |
+|--------------------|---------------|------------------------|
+| ``Workers/*.cs`` presente | Windows Service (.NET Worker Service) | ``.github/prompts/card-worker-service.prompt.md`` |
+| ``Endpoints/*.cs`` presente | Minimal API (.NET 10) | ``.github/prompts/card-minimal-api.prompt.md`` |
+| ``package.json`` presente (senza ``.csproj``) | Frontend SPA/SSR | Usa template generico, sezione Stack da ``package.json`` |
+| Nessuno dei precedenti | Tipo non rilevato | Usa template generico sotto |
+
+Per ogni progetto: **genera la card standard** con il template specifico. Non usare il template generico se esiste uno dedicato.
+
+## Analisi (se presenti)
+- ``.csproj``, ``appsettings*.json``, ``launchSettings.json``
+- ``Program.cs`` o entry point
+- ``DbContext``, provider/repository, using statements
+
+## Template generico (fallback)
+
+Usato solo se il tipo non corrisponde a nessun template dedicato.
+
+```markdown
+# Card: [Nome Progetto]
+
+## Identificazione
+- **Progetto:**
+- **Solution:** [NomeSolution.sln]
+- **Workspace:** [NomeWorkspace.code-workspace]
+- **Repository:** [URL senza branch]
+- **Tipo Applicazione:**
+- **Pattern Architetturale:**
+- **Versione Corrente:**
+- **Owner/Team:**
+- **Referente:** [nome referente]
+- **Contatto Supporto:** [Da compilare]
+
+## Stack Tecnologico
+- **Linguaggio Principale:**
+- **Framework:**
+- **Target Framework:**
+- **SDK Version:**
+
+## Dipendenze
+
+### Progetti Interni
+-
+
+### Pacchetti Esterni
+| Pacchetto | Versione | Scopo |
+|-----------|----------|-------|
+| ... | ... | ... |
+
+## Database
+| Connection String Key | Nome Database | Tipo | Server/Host | Username | Provider/ORM |
+|-----------------------|---------------|------|-------------|----------|--------------|
+| ... | ... | ... | ... | ... | ... |
+
+## Servizi Esterni
+| Tipo | Nome/Endpoint | Protocollo | Autenticazione | Scopo/Descrizione |
+|------|---------------|------------|----------------|-------------------|
+| ... | ... | ... | ... | ... |
+
+## Configurazione e Hosting
+- **Entrypoint:** Program.cs o localhost[/path-ui]
+- **Ambiente Test:** [percorso fisico | nome server | stack Portainer/Swarm | non pubblicato]
+- **Ambiente Produzione:** [percorso fisico | nome server | stack Portainer/Swarm | non pubblicato]
+
+---
+*Revisione v1.0 - {YYYY-MM-DD HH:MM} - {modello-llm}*
+```
+
+## Regole
+- Non inventare dati; campi senza info restano vuoti
+- Tabelle senza dati: lascia solo header
+- Card standard: indica solo il nome variabile, mai il valore reale
+- Se molti progetti: una card per progetto + opzionale ``card-solution.md``
+- Risposta del prompt: indica solo le card generate, non riepilogare i dati
+
+## Aggiungere una nuova tipologia
+
+Per ogni nuovo tipo di progetto:
+1. Crea ``.github/prompts/card-<tipo>.prompt.md`` con le sezioni specifiche
+2. Aggiungi una riga alla tabella "Rilevamento tipo" sopra
+
+## Checklist Post-Generazione
+- [ ] Tipo rilevato correttamente, template dedicato usato se disponibile
+- [ ] ``docs/`` esiste e contiene le card standard
+- [ ] Campi vuoti lasciati vuoti, niente dati inventati
+- [ ] Card standard: nessun segreto esposto
+- [ ] Footer con data e LLM presente in ogni card
+- [ ] Referente compilato in ogni card (o `da definire`)
+- [ ] Ambiente Test compilato (o dichiarato `non pubblicato`)
+- [ ] Ambiente Produzione compilato (o dichiarato `non pubblicato`)
+
+*Prompt v2.4 - Card Project Generator - 2026-10-09 — claude-opus-5-5 — footer nel formato unico (2026-10-20)*
