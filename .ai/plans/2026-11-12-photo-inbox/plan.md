@@ -1,8 +1,39 @@
 # Piano: dr-photodrop — inbox di foto dal telefono al PC
 Data: 2026-11-12
-Stato: IN ATTESA DI APPROVAZIONE
-Branch: plan/photo-inbox (proposto — la scelta finale spetta all'utente: branch dedicato oppure `main`)
+Stato: IN CORSO
+Branch: main (scelta dell'utente, 2026-11-13: "usa pure main, autorizzo")
 Agenti paralleli: 2 (vedi "Parallelismo")
+
+## Decisioni prese all'approvazione (2026-11-13)
+
+- Piano approvato dall'utente, esecuzione su `main`.
+- Token: **schema B** (proposta del piano, Rischi 2) — token salvato sul telefono, inviato come `X-Api-Key`; nginx del frontend non aggiunge chiavi.
+- Foto: ridimensionamento lato client di default (lato lungo 2000 px, JPEG 0.85) con opzione "invia originale" nelle impostazioni della PWA (Rischi 4 resta da tarare con foto vere).
+- Versionamento: prefisso di rotta `/api/v1` con `MapGroup`, senza pacchetto Asp.Versioning.
+- Ancora aperta: HTTPS nginx-proxy vs Tailscale (Rischi 1) → blocca la sola Fase 1.
+
+## Contratto API (fissato 2026-11-13, vincolante per Fasi 2 e 3)
+
+Autenticazione: header `X-Api-Key` su tutte le rotte `/api/v1/*`; `/health` anonimo. JSON in camelCase.
+
+`GET /api/v1/scopes` → `200` array di:
+```json
+{ "id": "componenti", "name": "Componenti elettronici", "icon": "cpu", "photoHints": ["etichetta","oggetto"],
+  "fields": [ { "key": "quantity", "label": "Quantità", "type": "number", "required": false, "default": null, "min": 1, "maxLength": null } ] }
+```
+(`targetFolder` non esposto; `type` ∈ `text|number|date`; `default` stringa o null.)
+
+`POST /api/v1/inbox/photos` — `multipart/form-data`, una foto per richiesta:
+| Parte | Tipo | Regola |
+|---|---|---|
+| `file` | binario | content-type in `AllowedContentTypes`, magic bytes coerenti, ≤ `MaxPhotoSizeMb` |
+| `scope` | testo | id di un ambito esistente |
+| `photoId` | testo | GUID |
+| `batchId` | testo | GUID |
+| `capturedAt` | testo | ISO 8601 con offset (es. `2026-11-13T10:15:00+01:00`), non oltre +5 min nel futuro, non più vecchio di 1 anno |
+| `fields` | testo | oggetto JSON `{ "<key>": string \| number }`, opzionale (default `{}`); chiavi non definite nell'ambito → 400; `number` come numero JSON, `date` come `YYYY-MM-DD` |
+
+Risposte: `201` `{ "photoId", "batchId", "scope", "duplicate": false }` · `200` stesso corpo con `"duplicate": true` se `photoId` già presente nell'ambito · `400` `ValidationProblem` (chiavi = nome della parte) · `401` senza/errata chiave · `413` corpo oltre il limite.
 
 > Il piano è autosufficiente: una sessione nuova può eseguirlo leggendo solo questo file, `CLAUDE.md` e il codice del repository.
 > Lo scheletro del progetto esiste già (Fase 0) ed è stato verificato: `dotnet build` e `dotnet test` verdi, `npm run build` della PWA verde. **Nessuna funzionalità è implementata.**
