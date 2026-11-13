@@ -1,0 +1,11 @@
+{
+  "id": "alimenti",
+  "name": "Alimenti",
+  "icon": "utensils",
+  "targetFolder": "alimenti",
+  "photoHints": ["piatto", "etichetta"],
+  "fields": [
+    { "key": "portion", "label": "Porzione", "type": "text", "required": false, "maxLength": 64 },
+    { "key": "date", "label": "Data", "type": "date", "required": false }
+  ]
+}

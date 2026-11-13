@@ -1,5 +1,6 @@
 using dr_photodrop.api.Endpoints;
 using dr_photodrop.api.Options;
+using dr_photodrop.api.Services;
 using Serilog;
 using SimpleAuthentication;
 
@@ -18,6 +19,7 @@ builder.Services.AddSerilog((_, lc) => lc
 
 builder.Services.AddOptions<InboxOptions>().BindConfiguration(InboxOptions.SectionName);
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddInboxServices();
 
 builder.Services.AddProblemDetails();
 builder.Services.AddSimpleAuthentication(builder.Configuration);
@@ -34,7 +36,7 @@ app.UseAuthorization();
 app.MapOpenApi();
 app.MapHealthEndpoints();
 
-// TODO (piano photo-inbox, fase 2): GET /api/v1/scopes e POST /api/v1/inbox/photos con validatore esplicito.
+app.MapApiV1Endpoints();
 
 await app.RunAsync();
 
