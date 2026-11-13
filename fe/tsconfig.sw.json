@@ -1,0 +1,23 @@
+{
+  "extends": "@vue/tsconfig/tsconfig.json",
+  "include": [
+    "src/sw/**/*",
+    "src/config/**/*",
+    "src/types/**/*",
+    "src/utils/fileTypes.ts",
+    "src/services/db.ts",
+    "src/services/apiClient.ts",
+    "src/services/settingsService.ts",
+    "src/services/queueService.ts",
+    "src/services/syncService.ts"
+  ],
+  "compilerOptions": {
+    "noUncheckedIndexedAccess": true,
+    "lib": ["ESNext", "WebWorker"],
+    "types": [],
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.sw.tsbuildinfo"
+  }
+}
