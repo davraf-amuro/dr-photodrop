@@ -128,7 +128,7 @@ Fase 2 (API) e Fase 3 (PWA) sono indipendenti dopo l'accordo sul contratto (sezi
 - **Su divergenza**: STOP e scrivere `Divergenza Fase 1: <cosa>`.
 
 ### Fase 2: API di ricezione
-- **Stato**: [ ]
+- **Stato**: [x] — integrata su `main` 2026-11-13 (merge `890519b`): build 0 avvisi, 62/62 test, `dotnet format --verify-no-changes` pulito nel worktree. Decisioni dell'esecutore: testo vuoto = campo non compilato; errori dei campi sotto chiave `fields`; `contentType` nel JSON = quello dei magic bytes; nuove opzioni `MultipartOverheadKb`, `CapturedAtMaxFutureMinutes`, `CapturedAtMaxAgeDays`, `OriginalFileNameMaxLength`. Non coperti da test: 413 con body chunked (tetto Kestrel); `curl` manuale sostituito dai test di integrazione.
 - **Dipende da**: Fase 0 (può girare in parallelo alla Fase 3)
 - **Modello**: sessione
 - **File**: `src/dr_photodrop.api/**`, `tests/dr_photodrop.tests/**`, `scopes/alimenti.json`
@@ -154,6 +154,14 @@ Fase 2 (API) e Fase 3 (PWA) sono indipendenti dopo l'accordo sul contratto (sezi
   5. PWA: icone 192/512 + maskable, `theme_color`, `display: standalone`, service worker con precache dell'app shell e `registerType: autoUpdate`; nessuna cache delle risposte `/api/`.
   6. Lint e type-check (`npm run type-check`; aggiungere eslint/prettier allineati a dr-partsbin se si vuole il gate `npm run lint`).
 - **Verifica passo**: `npm run build` verde; Lighthouse/Chrome DevTools "installabile"; in DevTools offline gli scatti restano in coda e partono al ritorno online (con API di prova).
+
+### Fase 3b: Spostamento del frontend in `src/`
+- **Stato**: [ ]
+- **Dipende da**: Fase 3 integrata (l'esecutore della Fase 3 lavora in `fe/`: spostare prima creerebbe conflitti)
+- **Modello**: sessione (orchestratore)
+- **Motivo**: richiesta utente 2026-11-13 — "tutti i sorgenti devono stare dentro alla cartella src". Origine del difetto: catalogo dr-guidelines, `vue-fe.targetPath = "."` (issue aperta su dr-guidelines).
+- **Azioni**: `git mv fe src/dr-photodrop-fe` (nome = suffisso `-fe` del catalogo, uguale al nome del pacchetto npm e del container); aggiornare i riferimenti a `fe/` in `docker-compose.yml` (`build`), `Dockerfile`/`.dockerignore` di radice se escludono o copiano `fe`, `.gitignore` di radice, `README.md`, questo piano (Fasi 3, 6, criteri).
+- **Verifica passo**: `grep -rn "fe/" --exclude-dir=node_modules` senza riferimenti residui alla vecchia cartella; `npm run build` e `npm run lint` verdi nella nuova cartella; `dotnet build` verde (il frontend non deve entrare nel contesto di build dell'API).
 
 ### Fase 4: Deploy Docker e prova end-to-end
 - **Stato**: [ ]
