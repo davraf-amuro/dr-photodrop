@@ -14,6 +14,18 @@ public class InboxOptions
     /// <summary>Dimensione massima di una foto in MB.</summary>
     public int MaxPhotoSizeMb { get; set; } = 10;
 
+    /// <summary>Spazio in KB, oltre la foto, concesso alle altre parti multipart (limite di body = foto + questo margine).</summary>
+    public int MultipartOverheadKb { get; set; } = 64;
+
     /// <summary>Content-type ammessi per le foto.</summary>
     public string[] AllowedContentTypes { get; set; } = ["image/jpeg", "image/png", "image/webp"];
+
+    /// <summary>Minuti di anticipo massimi tollerati su <c>capturedAt</c> rispetto all'orologio del server (scarti di orologio del telefono).</summary>
+    public int CapturedAtMaxFutureMinutes { get; set; } = 5;
+
+    /// <summary>Giorni di anzianità massimi di <c>capturedAt</c>: una coda offline può restare ferma a lungo, ma non all'infinito.</summary>
+    public int CapturedAtMaxAgeDays { get; set; } = 365;
+
+    /// <summary>Lunghezza massima del nome file originale conservato (solo informativo) nel JSON affiancato.</summary>
+    public int OriginalFileNameMaxLength { get; set; } = 128;
 }
