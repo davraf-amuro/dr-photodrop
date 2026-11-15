@@ -7,8 +7,7 @@
 .claude/
 .agents/
 .github/
-fe/node_modules/
-fe/dist/
+src/dr-photodrop-android/
 tests/
 .env
 *.env

@@ -12,6 +12,30 @@ Agenti paralleli: 2 (vedi "Parallelismo")
 - Versionamento: prefisso di rotta `/api/v1` con `MapGroup`, senza pacchetto Asp.Versioning.
 - Ancora aperta: HTTPS nginx-proxy vs Tailscale (Rischi 1) → blocca la sola Fase 1.
 
+## Revisione 2026-11-13 — app Android nativa (PREVALE sulle Fasi 1, 3, 3b, 4 originali)
+
+Richiesta utente: "una vera app da installare manualmente sul telefono, app da sviluppatore"; uso **solo in casa**: foto inviata subito se il PC è acceso, altrimenti inviata in automatico via Wi‑Fi di casa quando il PC torna raggiungibile. Scelte dell'utente (AskUserQuestion): **Kotlin (Android nativo)**; **eliminare la PWA** (`fe/`, recuperabile da git: merge `0547637`).
+
+**Perimetri fissati dall'utente (2026-11-15)**: "prodotto casalingo, usato solo all'interno della rete di casa dal mio pc che accendo quando mi serve. possiamo stare in http senza https usando solo un token di riconoscimento tra app e api. l'app dal telefono posso usarla per registrare/fotografare i componenti anche a pc spento e inviarli dopo".
+- Solo LAN di casa; PC acceso a richiesta (spesso spento) → l'app deve funzionare **offline-first**: scatto e compilazione campi sempre possibili, invio differito.
+- HTTP senza HTTPS; autenticazione solo token `X-Api-Key` app↔API. Decisione "Ancora aperta: HTTPS" sopra → **chiusa**.
+- Elenco ambiti/campi: servono in cache sul telefono (scaricati all'ultimo contatto col PC), altrimenti a PC spento non si compila nulla. Primo avvio: serve una sincronizzazione col PC acceso.
+
+Conseguenze:
+- **Niente HTTPS né certificati**: un'app nativa può usare HTTP verso il PC di casa (`network_security_config` con cleartext). Rischio dichiarato: sulla Wi‑Fi di casa token e foto viaggiano in chiaro; accettabile per uso domestico, da rivedere se si esce di casa. nginx-proxy e Tailscale fuori dal progetto.
+- **Invio automatico vero**: WorkManager con vincolo rete non a consumo (Wi‑Fi) + controllo `/health` del PC; lavoro periodico (minimo Android: 15 min) più invio immediato allo scatto. Le foto partono entro ~15 min dall'accensione del PC, subito se si apre l'app.
+- L'API della Fase 2 resta invariata: stesso contratto.
+- Disponibile vs alternativa: sul PC c'è il workload .NET MAUI + Android SDK 36 (da Visual Studio, `C:\Program Files (x86)\Android\android-sdk`), proposto come default; l'utente ha scelto Kotlin, che richiede **Android Studio** (non installato: porta JDK e SDK manager). Nessun pacchetto `dr-*` copre Android/Kotlin → regole di dominio: convenzioni Kotlin ufficiali + direttive trasversali (copilot-instructions); gap di catalogo segnalabile con `/dr-file-feedback`.
+
+### Fasi della revisione
+
+- **R1 — Rimozione PWA e pulizia** [x] (2026-11-15: build ok, 62 test verdi, `dotnet format --verify-no-changes` pulito; `.dockerignore` esclude ora `src/dr-photodrop-android/`) — `git rm -r fe/`; togliere il servizio `fe` da `docker-compose.yml`; riferimenti a `fe/` in `README.md`, `.dockerignore`, `.gitignore`. Verifica: `grep -rn "fe/"` senza residui; `dotnet build` e test verdi.
+- **R2 — Strumenti Android** [ ] — installazione di Android Studio (`winget install Google.AndroidStudio`, dopo conferma) e primo avvio guidato **fatto dall'utente** (scarica SDK/build-tools); attivare "Opzioni sviluppatore" + "Debug USB" sul telefono. Verifica: `java -version` (JBR di Android Studio) e `adb devices` vede il telefono.
+- **R3 — Server raggiungibile in casa (sostituisce Fase 1)** [ ] — IP fisso del PC (prenotazione DHCP nel router, fatta dall'utente con la guida); cartella `E:\Davide\VM\docker\dr-photodrop\inbox\` (percorso da confermare); `.env` con token generato (mai in chat/log/repo); porta API `5070` pubblicata su LAN; regola Windows Firewall in ingresso solo profilo **Privato** per la 5070 (dopo conferma). Verifica: dal browser del telefono `http://<ip-pc>:5070/health` risponde.
+- **R4 — App Android Kotlin (sostituisce Fase 3)** [ ] — cartella `src/dr-photodrop-android` (Gradle wrapper, Kotlin, Jetpack Compose, minSdk 26, targetSdk 36). Schermate: ambito (da `GET /api/v1/scopes`, cache locale) → scatto (fotocamera di sistema via `ActivityResultContracts.TakePicture` + FileProvider, più foto) → campi dinamici → lotto → "Invia" (accoda sempre; invio immediato se il PC risponde). Coda in Room (foto su storage privato dell'app), WorkManager (one-time allo scatto + periodico 15 min, vincolo `UNMETERED`, backoff esponenziale), client OkHttp multipart conforme al contratto; Impostazioni: indirizzo PC + token (cifrato con Android Keystore). Ridimensionamento 2000 px / JPEG 0.85 con opzione "invia originale". Lint: `./gradlew lint` + ktlint/detekt se leggeri. Verifica: `./gradlew assembleDebug lint test` verdi, APK in `app/build/outputs/apk/debug/`.
+- **R5 — Prova reale (sostituisce Fase 4)** [ ] — APK installato a mano; `docker compose up -d` (dopo conferma); scatto con PC acceso → foto e JSON in inbox; scatto con PC spento, poi accensione → arrivo entro ~15 min senza aprire l'app; reinvio senza duplicati.
+- Fasi 5, 6 invariate (la 6 documenta app Android al posto della PWA); Fase 3b originale annullata (non c'è più `fe/`); issue davraf-amuro/dr-guidelines#35 resta valida per i futuri progetti.
+
 ## Contratto API (fissato 2026-11-13, vincolante per Fasi 2 e 3)
 
 Autenticazione: header `X-Api-Key` su tutte le rotte `/api/v1/*`; `/health` anonimo. JSON in camelCase.
@@ -142,7 +166,7 @@ Fase 2 (API) e Fase 3 (PWA) sono indipendenti dopo l'accordo sul contratto (sezi
 - **Verifica passo**: `dotnet build` 0 avvisi; `dotnet test` verde; con `curl` locale (chiave di prova, cartella temporanea) il POST produce foto + JSON affiancato coerenti con la specifica.
 
 ### Fase 3: PWA
-- **Stato**: [ ]
+- **Stato**: [x] eseguita e integrata (merge `0547637`), poi **superata** dalla Revisione 2026-11-13 (app Android nativa): rimossa in R1
 - **Dipende da**: Fase 0 (parallela alla Fase 2; il test end-to-end attende la Fase 2)
 - **Modello**: sessione
 - **File**: `fe/**`
