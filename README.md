@@ -8,7 +8,7 @@ Uso solo nella rete di casa: HTTP senza HTTPS, riconoscimento app↔API con un t
 
 ## Parti
 
-- `src/dr_photodrop.api` — API di ricezione (.NET 10 Minimal API, chiave in header `X-Api-Key`).
+- `src/dr_photodrop.api` — API di ricezione (.NET 11 Minimal API, chiave in header `X-Api-Key`).
 - `src/dr-photodrop-android` — app Android (Kotlin), in arrivo.
 - `scopes/` — un file JSON per ambito (nome, icona, campi, cartella): nuovo ambito = nuovo file, senza toccare il codice.
 - `tests/dr_photodrop.tests` — test xUnit.
